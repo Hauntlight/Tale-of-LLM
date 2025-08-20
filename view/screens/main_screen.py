@@ -1,19 +1,27 @@
+import os
+
 from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
+from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
 
+from control.main_screen_controls import MainScreenControls
 from view.widgets.buttons.menu_button import MenuButton
 from view.widgets.layouts.main_screen_layout import MainScreenLayout
+from view.widgets.popup.popup_classifica import PopupClassifica
 
 
 class MainScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.controls = MainScreenControls(self)
+
+
         background = MainScreenLayout(orientation="vertical", padding=20, spacing=10)
 
         base_layout = BoxLayout(orientation="horizontal", padding=20, spacing=10)
@@ -37,10 +45,9 @@ class MainScreen(Screen):
 
         center_layout.add_widget(setting_button)
 
-        right_layout.add_widget(
-            MenuButton(text="Punteggi migliori", size_hint=(0.5, 0.5), pos_hint={"center_x": 0.5, "center_y": 0.5}))
-
-
+        bottone_classifica =MenuButton(text="Punteggi migliori", size_hint=(0.5, 0.5), pos_hint={"center_x": 0.5, "center_y": 0.5})
+        bottone_classifica.bind(on_release=lambda *a: PopupClassifica().open())
+        right_layout.add_widget(bottone_classifica)
 
 
         base_layout.add_widget(left_layout)
@@ -55,22 +62,27 @@ class MainScreen(Screen):
         outer_layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
         layout = BoxLayout(orientation="horizontal", padding=20, spacing=10)
         close_button = MenuButton(text="Chiudi", pos_hint={"center_x": 0.5, "center_y": 0.5})
-        text_input = TextInput(
-            multiline=False,
-            hint_text="API key",
-            size_hint_y=None,
-            height=dp(50),
-            pos_hint={"center_x": 0.5, "center_y": 0.5}
-        )
-        #text_input.bind(on_text_validate=self.save_message)
+
         save_button = MenuButton(
             text="Salva API key",
             size_hint=(None, None),  # Fixed size
             size=(dp(100), dp(50)),
             pos_hint={"center_x": 0.5, "center_y": 0.5}
         )
+
+        text_input_api = TextInput(
+            multiline=False,
+            hint_text="API key",
+            size_hint_y=None,
+            height=dp(50),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+            text=self.controls.get_api_key()
+        )
+        text_input_api.bind(on_text_validate=lambda *a: self.controls.save_settings(text_input_api.text.strip()))
+        text_input_api.text = self.controls.get_api_key()
         close_button.bind(on_release=lambda *a: modal.dismiss())
-        layout.add_widget(text_input)
+        save_button.bind(on_release=lambda *a: self.controls.save_settings(text_input_api.text.strip()))
+        layout.add_widget(text_input_api)
         layout.add_widget(save_button)
         outer_layout.add_widget(layout)
         outer_layout.add_widget(close_button)
@@ -125,3 +137,14 @@ class MainScreen(Screen):
 
         modal.add_widget(layout)
         modal.open()
+
+    def show_popup(self, title, message):
+        layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
+        label = Label(text=message)
+        close_button = MenuButton(text="Chiudi", size_hint=(1, 0.3),pos_hint={"center_x": 0.5, "center_y": 0.5})
+        layout.add_widget(label)
+        layout.add_widget(close_button)
+
+        popup = Popup(title=title, content=layout, size_hint=(0.7, 0.4), auto_dismiss=False)
+        close_button.bind(on_release=popup.dismiss)
+        popup.open()
