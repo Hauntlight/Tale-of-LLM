@@ -6,7 +6,6 @@ from kivy.app import App
 from control.app_state import AppState
 from view.screens.main_screen import MainScreen
 from kivy.config import Config
-import control.app_state
 
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 

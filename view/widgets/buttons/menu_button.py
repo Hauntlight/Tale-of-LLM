@@ -47,7 +47,6 @@ class MenuButton(ButtonBehavior, BoxLayout, HoverBehavior):
 
         self.bind(pos=self._update_bg, size=self._update_bg)
 
-        # Label on top
         self.label = Label(
             text=text,
             halign="center",

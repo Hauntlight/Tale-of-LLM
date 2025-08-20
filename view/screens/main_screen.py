@@ -58,7 +58,7 @@ class MainScreen(Screen):
         text_input = TextInput(
             multiline=False,
             hint_text="API key",
-            size_hint_y=None,  # Disable automatic vertical resizing
+            size_hint_y=None,
             height=dp(50),
             pos_hint={"center_x": 0.5, "center_y": 0.5}
         )
