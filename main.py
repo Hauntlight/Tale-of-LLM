@@ -9,8 +9,10 @@ from kivy.config import Config
 
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 
+
 class MainGame(App):
     def build(self):
+        self.icon = "assets/ico/icon.png"
         sm = ScreenManager(transition=FadeTransition())
         sm.add_widget(MainScreen(name="main_screen"))
         inspector.create_inspector(Window, sm) #INSPECTOR
