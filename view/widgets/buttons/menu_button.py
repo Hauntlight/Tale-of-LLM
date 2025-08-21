@@ -13,8 +13,8 @@ class MenuButton(ButtonBehavior, BoxLayout, HoverBehavior):
     def __init__(self, text="", **kwargs):
         super().__init__(orientation='vertical', padding=dp(10), spacing=dp(5), **kwargs)
         self.size_hint = (None, None)
-        self.width = dp(200)
-        self.height = dp(50)
+        self.width = dp(205)
+        self.height = dp(55)
 
         self.default_color = (1, 0.5, 0, 1)
         self.hover_color = (0.9, 0.4, 0, 1)
@@ -37,6 +37,7 @@ class MenuButton(ButtonBehavior, BoxLayout, HoverBehavior):
         self.add_widget(self.label)
 
         self.click_sound = SoundLoader.load("assets/sounds/sfx/click.mp3")
+        self.click_sound.volume = 0.03
 
     def _update_text_size(self, *args):
         self.label.text_size = self.label.size

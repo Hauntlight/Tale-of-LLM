@@ -1,25 +1,31 @@
 import random
 
+from kivy.core.audio import SoundLoader
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
+from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.textinput import TextInput
 
 from control.app_state import AppState
+from control.game_controls import GameControls
 from data.data_class import DataClass
+from view.widgets.popup.quick_message import QuickMessage
+from view.widgets.rounded_label import RoundedLabel
 from view.widgets.buttons.menu_button import MenuButton
 from view.widgets.card_ambiente import CardAmbiente
 from view.widgets.layouts.main_screen_layout import MainScreenLayout
+from view.widgets.limited_text_input import LimitedTextInput
 
 
 class GameScreen(Screen):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
         root = BoxLayout(orientation='horizontal', spacing=5, padding=5)
         self.bgLayout = MainScreenLayout("assets/images/ui/woods.jpg", orientation='vertical', spacing=5, padding=5,
                                          size_hint_x=2)
@@ -47,12 +53,13 @@ class GameScreen(Screen):
         self.chat_layout.bind(minimum_height=self.chat_layout.setter('height'))
         self.scroll_view.add_widget(self.chat_layout)
 
+        self.controls = GameControls()
         # Input area
         input_layout = BoxLayout(size_hint=(1, 0.1), spacing=5)
-        self.text_input = TextInput(multiline=False, hint_text="Cosa vuoi fare?", size_hint_x=0.8)
-        self.text_input.bind(on_text_validate=self.send_message)
+        self.text_input = LimitedTextInput(multiline=True, hint_text="Cosa vuoi fare?", size_hint_x=0.8)
+        self.text_input.bind(on_text_validate=lambda *a:self.controls.send_message(self.text_input.text,self))
         send_button = MenuButton(text="Agisci!", size_hint_x=0.2)
-        send_button.bind(on_press=self.send_message)
+        send_button.bind(on_press=lambda *a:self.controls.send_message(self.text_input.text,self))
         input_layout.add_widget(self.text_input)
         input_layout.add_widget(send_button)
 
@@ -63,32 +70,22 @@ class GameScreen(Screen):
         root.add_widget(right_column)
         self.add_widget(root)
 
-    def add_message(self, text, right=False):
-        label = Label(
-            text=text,
-            size_hint_y=None,
-            halign='right' if right else 'left',
-            valign='middle',
-            text_size=(250, None),
-        )
-        label.bind(texture_size=label.setter('size'))
+        self.dragon_music = SoundLoader.load("assets/sounds/music/dragon_fight.mp3")
+        self.dragon_music.volume = 0.01
+        self.dragon_music.loop = True
 
-        box = BoxLayout(size_hint_y=None, height=label.texture_size[1] + 20)
-        if right:
-            box.add_widget(Label(size_hint_x=1))
-            box.add_widget(label)
-        else:
-            box.add_widget(label)
-            box.add_widget(Label(size_hint_x=1))
+        self.goblin_music = SoundLoader.load("assets/sounds/music/goblin_fight.mp3")
+        self.goblin_music.volume = 0.01
+        self.goblin_music.loop = True
 
-        self.chat_layout.add_widget(box)
+        self.win_sound = SoundLoader.load("assets/sounds/sfx/win.mp3")
+        self.lose_sound = SoundLoader.load("assets/sounds/sfx/lose.mp3")
+        self.alternative_sound = SoundLoader.load("assets/sounds/sfx/run.mp3")
 
-    def send_message(self, instance):
-        message = self.text_input.text.strip()
-        if message:
-            self.add_message(f"You: {message}", right=True)
-            self.text_input.text = ""
-            self.add_message("RECEIVED", right=False)
+    def add_message(self, text, colore=[0.3, 0.5, 0.7],markup=False,title=None):
+        bubble = RoundedLabel(text=text,colore=colore,markup=markup,title=title)
+        self.chat_layout.add_widget(bubble)
+        self.text_input.focus = True
 
     def on_pre_enter(self):
         super().on_pre_enter()
@@ -99,9 +96,17 @@ class GameScreen(Screen):
 
     def on_enter(self, *args):
         super().on_enter()
+        self.initialize()
+
+    def initialize(self):
+        self.chat_layout.clear_widgets()
         chiavi = list(DataClass.ambienti_info.keys())
-        ambienti_casuali = random.sample(chiavi,2)
+        ambienti_casuali = random.sample(chiavi, 2)
         self.show_environments(ambienti_casuali)
+        self.text_input.disabled = False
+        loader = SoundLoader.load("assets/sounds/sfx/adventure.mp3")
+        loader.volume = 0.05
+        loader.play()
 
 
     def show_environments(self,ambienti):
@@ -128,7 +133,77 @@ class GameScreen(Screen):
         self.enemy_image.source = DataClass.entity_info[AppState().game.avventura_corrente.avversario.nome]["img"]
         self.enemy_label.text = AppState().game.avventura_corrente.avversario.nome
         self.enemy_image.reload()
+        self.add_message(f"Tra te e il tesoro si frappone un {AppState().game.avventura_corrente.entita.nome}!",[0.5, 0.5, 0.5])
+        if "Goblin" in self.enemy_label.text:
+            self.goblin_music.play()
+        else:
+            self.dragon_music.play()
+
 
     def update_datas(self):
         self.label_hp.text = f"{AppState().game.giocatore.hp}/{AppState().game.giocatore.hp_max} HP"
         self.label_gold.text = f"{AppState().game.giocatore.gold} G"
+        self.text_input.focus = True
+
+
+    def win(self,premio):
+        self.goblin_music.stop()
+        self.dragon_music.stop()
+        self.win_sound.play()
+        self.text_input.disabled = True
+        self.add_message(f"Hai ottenuto un tesoro di {premio}G!",[0.5, 0.5, 0.5])
+        button_continua = MenuButton("Continua l'avventura!", size_hint_y = None)
+        button_esci = MenuButton("Torna a casa con il bottino!", size_hint_y=None)
+        button_continua.bind(on_release=lambda *a:self.controls.continua_partita())
+        button_esci.bind(on_release=lambda *a:self.controls.fine_partita())
+        self.chat_layout.add_widget(button_continua)
+        self.chat_layout.add_widget(button_esci)
+        self.update_datas()
+
+    def lose(self):
+        self.goblin_music.stop()
+        self.dragon_music.stop()
+        self.lose_sound.play()
+        self.text_input.disabled = True
+        self.add_message(f"Hai perso tutto il bottino!", [0.5, 0.5, 0.5])
+        button_menu = MenuButton("Torna al menu!", size_hint_y=None)
+        button_menu.bind(on_release=lambda *a: self.controls.torna_al_menu())
+        self.chat_layout.add_widget(button_menu)
+        self.update_datas()
+
+    def run(self):
+        self.goblin_music.stop()
+        self.dragon_music.stop()
+        self.alternative_sound.play()
+        self.text_input.disabled = True
+        self.add_message(f"Sei sfuggito!", [0.5, 0.5, 0.5])
+        button_continua = MenuButton("Continua l'avventura!", size_hint_y=None)
+        button_esci = MenuButton("Torna a casa con il bottino!", size_hint_y=None)
+        button_continua.bind(on_release=lambda *a: self.controls.continua_partita())
+        button_esci.bind(on_release=lambda *a: self.controls.fine_partita())
+        self.chat_layout.add_widget(button_continua)
+        self.chat_layout.add_widget(button_esci)
+        self.update_datas()
+
+
+    def mostra_popup(self):
+        layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
+        label = Label(text="Vuoi salvare la storia del tuo eroe? [Sarà disponibile in un file txt nella cartella save]")
+        save_button = MenuButton(text="Si", size_hint=(1, 0.5), pos_hint={"center_x": 0.5, "center_y": 0.5})
+        menu_button = MenuButton(text="No", size_hint=(1, 0.5), pos_hint={"center_x": 0.5, "center_y": 0.5})
+        layout.add_widget(label)
+        layout.add_widget(save_button)
+        layout.add_widget(menu_button)
+        self.popup = Popup(title="Condividi la tua storia!", content=layout, size_hint=(0.7, 0.4), auto_dismiss=False)
+        save_button.bind(on_release=lambda *a: self.controls.save_story())
+        menu_button.bind(on_release=self.popup.dismiss)
+        self.popup.bind(on_dismiss=lambda *a: self.controls.torna_al_menu())
+        self.popup.open()
+
+    def change_scene(self,scene_name):
+        self.manager.current = scene_name
+
+    def mostra_messaggio_salvataggio(self,message):
+        quick = QuickMessage(message=message)
+        quick.bind(on_dismiss=self.popup.dismiss)
+        quick.open()

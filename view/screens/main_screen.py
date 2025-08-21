@@ -1,3 +1,4 @@
+from kivy.core.audio import SoundLoader
 from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
@@ -60,6 +61,9 @@ class MainScreen(Screen):
         base_layout.add_widget(right_layout)
         background.add_widget(base_layout)
         self.add_widget(background)
+        self.music = SoundLoader.load("assets/sounds/music/main_screen.mp3")
+        self.music.volume = 0.01
+        self.music.loop = True
 
     def open_settings(self, *args):
         modal = ModalView(size_hint=(0.9, 0.3), auto_dismiss=False)
@@ -211,6 +215,11 @@ class MainScreen(Screen):
         modal.add_widget(main_content)
         modal.open()
 
+    def on_enter(self, *args):
+        self.music.play()
+
+    def on_leave(self, *args):
+        self.music.stop()
 
     def change_scene(self,scene_name):
         self.manager.new_game()
