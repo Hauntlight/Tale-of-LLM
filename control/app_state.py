@@ -1,6 +1,10 @@
 import csv
 import os
 
+from control.game import Game
+
+
+
 class AppState:
     _instance = None
 
@@ -11,13 +15,17 @@ class AppState:
         return cls._instance
 
 
+
     def initialize(self):
         self._highscores_path = "save/highscores.sav"
         self.config_path = "save/config.prop"
         self._api = self.load_api()
         self._highscores = self.carica_highscore()
+        self.nome = ""
         #print(self._highscores)
 
+    def create_game(self, classe):
+        self.game = Game(self.nome,classe)
 
     def set_api_key(self, key):
         self._api = key

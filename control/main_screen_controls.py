@@ -25,3 +25,11 @@ class MainScreenControls():
 
     def get_api_key(self):
         return AppState().get_api_key()
+
+    def conferma_nome(self, nome):
+        if not nome:
+            self.view.show_popup("Errore", "Il nome non può essere vuoto.")
+            return -1
+        AppState().nome = nome
+        return 1
+
