@@ -64,7 +64,7 @@ class Adventure():
     --- Esempio: Il giocatore convince l’entità a fare amicizia <FINE_-1>
     --- Esempio: Il giocatore elimina l'entità <FINE_0>
     --- Esempio: L'entità elimina il giocatore <FINE_1>
-    --- Esempio: Il giocatore fugge <FINE_2>
+    --- Esempio: Il giocatore fugge <FINE_-2>
 
     Regole di Combattimento:
     - Indica i danni inflitti nel turno: Damage_To_Entity (0–5) e Damage_To_Player (0–5). I danni devono essere sempre giustificati narrativamente. Se la storia finisce in questo turno, non restituire valori di danno.
@@ -184,7 +184,7 @@ class Adventure():
                 return "sconfitta", 0 , 0
             elif status == "<FINE_-1>":  # Alternativo
                 return "alternativo", 0, 0
-            elif status == "<FINE_-1>":
+            elif status == "<FINE_-2>":
                 return "fuga", self.entita.hp_max, 0
         danno_base_a_entita = risposta_llm.get("Damage_To_Entity", 0)
         danno_base_a_giocatore = risposta_llm.get("Damage_To_Player", 0)
